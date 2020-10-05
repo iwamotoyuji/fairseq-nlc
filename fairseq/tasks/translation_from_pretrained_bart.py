@@ -18,7 +18,7 @@ class TranslationFromPretrainedBARTTask(TranslationTask):
         tgt_dict (~fairseq.data.Dictionary): dictionary for the target language
 
     .. note::
-        Src_dict and tgt_dict is the same dictionary.
+        src_dict and tgt_dict are the same dictionary.
 
         The translation task is compatible with :mod:`fairseq-train`,
         :mod:`fairseq-generate` and :mod:`fairseq-interactive`.

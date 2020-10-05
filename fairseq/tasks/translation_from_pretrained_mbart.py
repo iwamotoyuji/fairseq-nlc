@@ -49,6 +49,10 @@ class TranslationFromPretrainedMBARTTask(TranslationFromPretrainedBARTTask):
         parser.add_argument('--prepend-bos', action='store_true',
                             help='prepend bos token to each sentence, which matches '
                                  'mBART pretraining')
+        parser.add_argument('--src-prefix', type=str, default=None,
+                            help='file prefix when source and targe language are the same')
+        parser.add_argument('--tgt-prefix', type=str, default=None,
+                            help='file prefix when source and targe language are the same')
         # fmt: on
 
     def __init__(self, args, src_dict, tgt_dict):
@@ -59,6 +63,35 @@ class TranslationFromPretrainedMBARTTask(TranslationFromPretrainedBARTTask):
                 d.add_symbol('[{}]'.format(l))
             d.add_symbol('<mask>')
 
+    def load_dataset(self, split, epoch=1, combine=False, **kwargs):
+        """Load a given dataset split.
+
+        Args:
+            split (str): name of the split (e.g., train, valid, test)
+        """
+        paths = self.args.data.split(':')
+        assert len(paths) > 0
+        data_path = paths[(epoch - 1) % len(paths)]
+
+        # infer langcode
+        if self.args.src_prefix is not None and self.args.tgt_prefix is not None:
+            src, tgt = self.args.src_prefix, self.args.tgt_prefix
+        else:
+            src, tgt = self.args.source_lang, self.args.target_lang
+
+        self.datasets[split] = load_langpair_dataset(
+            data_path, split, src, self.src_dict, tgt, self.tgt_dict,
+            combine=combine, dataset_impl=self.args.dataset_impl,
+            upsample_primary=self.args.upsample_primary,
+            left_pad_source=self.args.left_pad_source,
+            left_pad_target=self.args.left_pad_target,
+            max_source_positions=getattr(self.args, 'max_source_positions', 1024),
+            max_target_positions=getattr(self.args, 'max_target_positions', 1024),
+            load_alignments=self.args.load_alignments,
+            prepend_bos=getattr(self.args, 'preprend_bos', False),
+            append_source_id=False
+            )
+        
     def build_dataset_for_inference(self, src_tokens, src_lengths, constraints=None):
         src_lang_id = self.source_dictionary.index('[{}]'.format(self.args.source_lang))
         source_tokens = []
