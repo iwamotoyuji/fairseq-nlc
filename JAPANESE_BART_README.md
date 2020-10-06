@@ -9,10 +9,11 @@ wget
 They includes a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
 
 ## Requirements
+fairseq (this branch of this forked repo)  
 [zenhan](https://pypi.org/project/zenhan/0.5/)  
 [pyknp](https://github.com/ku-nlp/pyknp)  
 [sentencepiece](https://github.com/google/sentencepiece/tree/master/python)  
-[tensorboard](https://github.com/tensorflow/tensorboard) (optional)  
+[tensorboardX](https://github.com/lanpa/tensorboardX) (optional)  
   
 
 ## Installation
@@ -28,7 +29,7 @@ Besides, before applying Juman++, we converted half-width characters to full-wid
 Prepare datasets (`$TRAIN_SRC`, ...), which contain one sentence per one line.  
 ```shell
 cat $TRAIN_SRC | python3 ./jaBART_preprocess.py --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/train.src-tgt.src
-cat $TRIN_TGT | python3 ./jaBART_preprocess.py  --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/train.src-tgt.tgt
+cat $TRAIN_TGT | python3 ./jaBART_preprocess.py  --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/train.src-tgt.tgt
 cat $VALID_SRC | python3 ./jaBART_preprocess.py --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/valid.src-tgt.src
 cat $VALID_TGT | python3 ./jaBART_preprocess.py --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/valid.src-tgt.tgt
 cat $TEST_SRC | python3 ./jaBART_preprocess.py --bpe_model $SENTENCEPIECE_MODEL --bpe_dict $DICT > $DATASET_DIR/test.src-tgt.src
@@ -62,11 +63,13 @@ cat $RESULT | grep -P "^T" | cut -f 2- | sed 's/<<unk>>/<unk>/g' | sed 's/▁//g
 ```
 
 ## Pretrain
+We set most of the parameters according to the papers of [BART](https://arxiv.org/pdf/1910.13461.pdf), [mBART](https://arxiv.org/abs/2001.08210) and [RoBERTa](https://arxiv.org/abs/1907.11692).  
+  
 Following command is an example of pretraining bart by yourself.  
 `$DATASET_DIR` must contain `train`, `valid` and `dict.txt`.  
 
 ```shell
-fairseq-train $DATASET_DIR --arch $BART --task denoising --criterion label_smoothed_cross_entropy --label-smoothing 0.2 \
+fairseq-train $DATASET_DIR --arch bart_base --task denoising --criterion label_smoothed_cross_entropy --label-smoothing 0.2 \
     --mask-length span-poisson --mask 0.35 --poisson-lambda 3.5 --permute-sentences 1.0 --replace-length 1 \
     --tokens-per-sample 512 --max-sentences $MAX_SENTENCES  --rotate 0.0 \
     --max-update 500000 --tensorboard-logdir $TENSORBOARD_DIR --update-freq $UPDATE_FREQ \
@@ -81,7 +84,7 @@ Following command is an example of pretraining multilingual (ja and en) bart by 
 `$DATASET_DIR` must contain `dict.txt`.  
 `$DATASET_DIR/{ja,en}` must contain `train` and `valid`.  
 ```shell
-fairseq-train $DATASET_DIR --arch $BART --task multilingual_denoising --criterion label_smoothed_cross_entropy --label-smoothing 0.2 \
+fairseq-train $DATASET_DIR --arch mbart_base --task multilingual_denoising --criterion label_smoothed_cross_entropy --label-smoothing 0.2 \
     --mask-length span-poisson --mask 0.35 --poisson-lambda 3.5 --permute-sentences 1.0 --replace-length 1 \
     --tokens-per-sample 512 --max-sentences $MAX_SENTENCES  --rotate 0.0 \
     --max-update 500000 --tensorboard-logdir $TENSORBOARD_DIR --update-freq $UPDATE_FREQ \
@@ -93,4 +96,3 @@ fairseq-train $DATASET_DIR --arch $BART --task multilingual_denoising --criterio
     --langs ja,en --add-lang-token
 ```
 
-Most of the parameters are according to the papers of [BART](https://arxiv.org/pdf/1910.13461.pdf), [mBART](https://arxiv.org/abs/2001.08210) and [RoBERTa](https://arxiv.org/abs/1907.11692).  

@@ -8,4 +8,4 @@ fairseq = {git = "https://github.com/utanaka2000/fairseq.git", editable = true, 
 zenhan = "*"
 pyknp = "*"
 sentencepiece = "*"
-tensorboard = "*"
+tensorboardX = "*"
