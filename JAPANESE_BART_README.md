@@ -50,7 +50,7 @@ fairseq-train $DATASET_DIR --arch $BART --restore-file $PRETRAINED_MODEL \
 --max-tokens 1024 --update-freq 2 --save-interval -1 --no-epoch-checkpoints --seed 222 --log-format simple --log-interval 2 \
 --reset-optimizer --reset-meters --reset-dataloader --reset-lr-scheduler  --save-interval-updates 5000 \
 --ddp-backend no_c10d --max-update 80000 \
---encoder-normalize-before --decoder-normalize-before
+--encoder-normalize-before --decoder-normalize-before --prepend-bos
 ```
 
 ## Text Generation
