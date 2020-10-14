@@ -3,12 +3,16 @@ We pretrained [BART](https://arxiv.org/pdf/1910.13461.pdf) models with Japanese 
 
 ## Download 
 ```shell
-# BART_base
-wget  
+# BART base (1.3G)
+wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_base_1.0.tar.gz
+# BART large (3.6G)
+wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_1.0.tar.gz
 ```
 They includes a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
 
 ## Requirements
+Python >= 3.6
+[Juman++](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++) == 2.0.0
 fairseq (this branch of this forked repo)  
 [zenhan](https://pypi.org/project/zenhan/0.5/)  
 [pyknp](https://github.com/ku-nlp/pyknp)  
