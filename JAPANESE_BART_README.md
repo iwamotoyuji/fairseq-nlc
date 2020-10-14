@@ -11,8 +11,8 @@ wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japa
 They includes a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
 
 ## Requirements
-Python >= 3.6
-[Juman++](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++) == 2.0.0
+Python >= 3.6  
+[Juman++](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++) == 2.0.0  
 fairseq (this branch of this forked repo)  
 [zenhan](https://pypi.org/project/zenhan/0.5/)  
 [pyknp](https://github.com/ku-nlp/pyknp)  
