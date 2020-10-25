@@ -8,7 +8,7 @@ wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japa
 # BART large (3.6G)
 wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_1.0.tar.gz
 ```
-They includes a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
+They include a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
 
 ## Requirements
 Python >= 3.6  
@@ -69,7 +69,7 @@ cat $RESULT | grep -P "^T" | cut -f 2- | sed 's/<<unk>>/<unk>/g' | sed 's/▁//g
 ## Pretrain
 We set most of the parameters according to the papers of [BART](https://arxiv.org/pdf/1910.13461.pdf), [mBART](https://arxiv.org/abs/2001.08210) and [RoBERTa](https://arxiv.org/abs/1907.11692).  
   
-Following command is an example of pretraining bart by yourself.  
+The following command is an example of pretraining bart by yourself.  
 `$DATASET_DIR` must contain `train`, `valid` and `dict.txt`.  
 
 ```shell
@@ -84,7 +84,7 @@ fairseq-train $DATASET_DIR --arch bart_base --task denoising --criterion label_s
     --fp16 --num-workers 0 --fp16-init-scale 4 
 ```
 
-Following command is an example of pretraining multilingual (ja and en) bart by yourself.  
+The following command is an example of pretraining multilingual (ja and en) bart by yourself.  
 `$DATASET_DIR` must contain `dict.txt`.  
 `$DATASET_DIR/{ja,en}` must contain `train` and `valid`.  
 ```shell
