@@ -12,7 +12,7 @@ They include a pretrained bart model (`bart_model.pt`), a sentencepiece model (`
 
 ## Requirements
 Python >= 3.6  
-[Juman++](http://nlp.ist.i.kyoto-u.ac.jp/index.php?JUMAN++) == 2.0.0  
+[Juman++](https://github.com/ku-nlp/jumanpp) == v2.0.0-rc3  
 fairseq (this branch of this forked repo)  
 [zenhan](https://pypi.org/project/zenhan/0.5/)  
 [pyknp](https://github.com/ku-nlp/pyknp)  
