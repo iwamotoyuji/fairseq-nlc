@@ -3,8 +3,8 @@ We pretrained [BART](https://arxiv.org/pdf/1910.13461.pdf) models with Japanese 
 
 ## Download 
 ```shell
-# BART base (1.3G)
-wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_base_1.0.tar.gz
+# BART base (1.2G)
+wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_base_1.1.tar.gz
 # BART large (3.6G)
 wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_1.0.tar.gz
 ```
