@@ -4,9 +4,9 @@ We pretrained [BART](https://arxiv.org/pdf/1910.13461.pdf) models with Japanese 
 ## Download 
 ```shell
 # BART base v1.1 (1.2G)
-wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_base_1.1.tar.gz
+wget http://lotus.kuee.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_base_1.1.tar.gz
 # BART large v1.0 (3.6G)
-wget http://nlp.ist.i.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_1.0.tar.gz
+wget http://lotus.kuee.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_1.0.tar.gz
 ```
 They include a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
 
