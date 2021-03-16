@@ -13,7 +13,7 @@ wget http://lotus.kuee.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/jap
 wget http://lotus.kuee.kyoto-u.ac.jp/nl-resource/JapaneseBARTPretrainedModel/japanese_bart_large_2.0.tar.gz
 ```
 They include a pretrained bart model (`bart_model.pt`), a sentencepiece model (`sp.model`) and a dictionary (`dict.txt`).  
-In v1, the bart model has pretrained on the text infilling task.
+In v1, the bart model has pretrained on the text infilling task.  
 In v2, the bart model has pretrained on the text infilling task and the sentence permutation task.
 
 ## Requirements
