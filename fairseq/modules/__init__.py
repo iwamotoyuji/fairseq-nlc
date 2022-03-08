@@ -2,9 +2,11 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+"""isort:skip_file"""
 
 from .adaptive_input import AdaptiveInput
 from .adaptive_softmax import AdaptiveSoftmax
+from .base_layer import BaseLayer
 from .beamable_mm import BeamableMM
 from .character_token_embedder import CharacterTokenEmbedder
 from .conv_tbc import ConvTBC
@@ -23,6 +25,8 @@ from .layer_norm import Fp32LayerNorm, LayerNorm
 from .learned_positional_embedding import LearnedPositionalEmbedding
 from .lightweight_convolution import LightweightConv, LightweightConv1dTBC
 from .linearized_convolution import LinearizedConvolution
+from .location_attention import LocationAttention
+from .lstm_cell_with_zoneout import LSTMCellWithZoneOut
 from .multihead_attention import MultiheadAttention
 from .positional_embedding import PositionalEmbedding
 from .same_pad import SamePad
@@ -36,40 +40,43 @@ from .transformer_layer import TransformerDecoderLayer, TransformerEncoderLayer
 from .vggblock import VGGBlock
 
 __all__ = [
-    'AdaptiveInput',
-    'AdaptiveSoftmax',
-    'BeamableMM',
-    'CharacterTokenEmbedder',
-    'ConvTBC',
-    'cross_entropy',
-    'DownsampledMultiHeadAttention',
-    'DynamicConv1dTBC',
-    'DynamicConv',
-    'DynamicCRF',
-    'FairseqDropout',
-    'Fp32GroupNorm',
-    'Fp32LayerNorm',
-    'gelu',
-    'gelu_accurate',
-    'GradMultiply',
-    'GumbelVectorQuantizer',
-    'KmeansVectorQuantizer',
-    'LayerDropModuleList',
-    'LayerNorm',
-    'LearnedPositionalEmbedding',
-    'LightweightConv1dTBC',
-    'LightweightConv',
-    'LinearizedConvolution',
-    'MultiheadAttention',
-    'PositionalEmbedding',
-    'SamePad',
-    'ScalarBias',
-    'SinusoidalPositionalEmbedding',
-    'TransformerSentenceEncoderLayer',
-    'TransformerSentenceEncoder',
-    'TransformerDecoderLayer',
-    'TransformerEncoderLayer',
-    'TransposeLast',
-    'VGGBlock',
-    'unfold1d',
+    "AdaptiveInput",
+    "AdaptiveSoftmax",
+    "BaseLayer",
+    "BeamableMM",
+    "CharacterTokenEmbedder",
+    "ConvTBC",
+    "cross_entropy",
+    "DownsampledMultiHeadAttention",
+    "DynamicConv1dTBC",
+    "DynamicConv",
+    "DynamicCRF",
+    "FairseqDropout",
+    "Fp32GroupNorm",
+    "Fp32LayerNorm",
+    "gelu",
+    "gelu_accurate",
+    "GradMultiply",
+    "GumbelVectorQuantizer",
+    "KmeansVectorQuantizer",
+    "LayerDropModuleList",
+    "LayerNorm",
+    "LearnedPositionalEmbedding",
+    "LightweightConv1dTBC",
+    "LightweightConv",
+    "LinearizedConvolution",
+    "LocationAttention",
+    "LSTMCellWithZoneOut",
+    "MultiheadAttention",
+    "PositionalEmbedding",
+    "SamePad",
+    "ScalarBias",
+    "SinusoidalPositionalEmbedding",
+    "TransformerSentenceEncoderLayer",
+    "TransformerSentenceEncoder",
+    "TransformerDecoderLayer",
+    "TransformerEncoderLayer",
+    "TransposeLast",
+    "VGGBlock",
+    "unfold1d",
 ]

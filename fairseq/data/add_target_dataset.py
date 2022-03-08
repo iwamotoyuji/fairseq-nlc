@@ -5,32 +5,47 @@
 
 import torch
 
-from . import BaseWrapperDataset
-from . import data_utils
+from . import BaseWrapperDataset, data_utils
+from fairseq.data.text_compressor import TextCompressor, TextCompressionLevel
 
 
 class AddTargetDataset(BaseWrapperDataset):
-    def __init__(self, dataset, labels, pad, eos, batch_targets, process_label=None, add_to_input=False):
+    def __init__(
+        self,
+        dataset,
+        labels,
+        pad,
+        eos,
+        batch_targets,
+        process_label=None,
+        label_len_fn=None,
+        add_to_input=False,
+        text_compression_level=TextCompressionLevel.none
+    ):
         super().__init__(dataset)
         self.labels = labels
         self.batch_targets = batch_targets
         self.pad = pad
         self.eos = eos
         self.process_label = process_label
+        self.label_len_fn = label_len_fn
         self.add_to_input = add_to_input
+        self.text_compressor = TextCompressor(level=text_compression_level)
 
-    def get_label(self, index):
-        return self.labels[index] if self.process_label is None else self.process_label(self.labels[index])
+    def get_label(self, index, process_fn=None):
+        lbl = self.labels[index]
+        lbl = self.text_compressor.decompress(lbl)
+        return lbl if process_fn is None else process_fn(lbl)
 
     def __getitem__(self, index):
         item = self.dataset[index]
-        item["label"] = self.get_label(index)
+        item["label"] = self.get_label(index, process_fn=self.process_label)
         return item
 
     def size(self, index):
         sz = self.dataset.size(index)
-        own_sz = len(self.get_label(index))
-        return (sz, own_sz)
+        own_sz = self.label_len_fn(self.get_label(index))
+        return sz, own_sz
 
     def collater(self, samples):
         collated = self.dataset.collater(samples)
@@ -51,6 +66,14 @@ class AddTargetDataset(BaseWrapperDataset):
         if self.add_to_input:
             eos = target.new_full((target.size(0), 1), self.eos)
             collated["target"] = torch.cat([target, eos], dim=-1).long()
-            collated["net_input"]["prev_output_tokens"] = torch.cat([eos, target], dim=-1).long()
+            collated["net_input"]["prev_output_tokens"] = torch.cat(
+                [eos, target], dim=-1
+            ).long()
             collated["ntokens"] += target.size(0)
         return collated
+
+    def filter_indices_by_size(self, indices, max_sizes):
+        indices, ignored = data_utils._filter_by_size_dynamic(
+            indices, self.size, max_sizes
+        )
+        return indices, ignored

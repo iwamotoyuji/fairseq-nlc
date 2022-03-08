@@ -4,9 +4,10 @@
 # LICENSE file in the root directory of this source tree.
 
 import bisect
-from collections import OrderedDict
 import time
+from collections import OrderedDict
 from typing import Dict, Optional
+
 
 try:
     import torch
@@ -16,6 +17,8 @@ try:
             return a.to(b)
         else:
             return a
+
+
 except ImportError:
     torch = None
 
@@ -51,11 +54,11 @@ class Meter(object):
 
 
 def safe_round(number, ndigits):
-    if hasattr(number, '__round__'):
+    if hasattr(number, "__round__"):
         return round(number, ndigits)
     elif torch is not None and torch.is_tensor(number) and number.numel() == 1:
         return safe_round(number.item(), ndigits)
-    elif np is not None and np.ndim(number) == 0 and hasattr(number, 'item'):
+    elif np is not None and np.ndim(number) == 0 and hasattr(number, "item"):
         return safe_round(number.item(), ndigits)
     else:
         return number
@@ -82,17 +85,17 @@ class AverageMeter(Meter):
 
     def state_dict(self):
         return {
-            'val': self.val,
-            'sum': self.sum,
-            'count': self.count,
-            'round': self.round,
+            "val": self.val,
+            "sum": self.sum,
+            "count": self.count,
+            "round": self.round,
         }
 
     def load_state_dict(self, state_dict):
-        self.val = state_dict['val']
-        self.sum = state_dict['sum']
-        self.count = state_dict['count']
-        self.round = state_dict.get('round', None)
+        self.val = state_dict["val"]
+        self.sum = state_dict["sum"]
+        self.count = state_dict["count"]
+        self.round = state_dict.get("round", None)
 
     @property
     def avg(self):
@@ -101,6 +104,38 @@ class AverageMeter(Meter):
     @property
     def smoothed_value(self) -> float:
         val = self.avg
+        if self.round is not None and val is not None:
+            val = safe_round(val, self.round)
+        return val
+
+
+class SumMeter(Meter):
+    """Computes and stores the sum"""
+
+    def __init__(self, round: Optional[int] = None):
+        self.round = round
+        self.reset()
+
+    def reset(self):
+        self.sum = 0  # sum from all updates
+
+    def update(self, val):
+        if val is not None:
+            self.sum = type_as(self.sum, val) + val
+
+    def state_dict(self):
+        return {
+            "sum": self.sum,
+            "round": self.round,
+        }
+
+    def load_state_dict(self, state_dict):
+        self.sum = state_dict["sum"]
+        self.round = state_dict.get("round", None)
+
+    @property
+    def smoothed_value(self) -> float:
+        val = self.sum
         if self.round is not None and val is not None:
             val = safe_round(val, self.round)
         return val
@@ -130,18 +165,18 @@ class TimeMeter(Meter):
 
     def state_dict(self):
         return {
-            'init': self.elapsed_time,
-            'n': self.n,
-            'round': self.round,
+            "init": self.elapsed_time,
+            "n": self.n,
+            "round": self.round,
         }
 
     def load_state_dict(self, state_dict):
-        if 'start' in state_dict:
+        if "start" in state_dict:
             # backwards compatibility for old state_dicts
-            self.reset(init=state_dict['init'])
+            self.reset(init=state_dict["init"])
         else:
-            self.reset(init=state_dict['init'], n=state_dict['n'])
-            self.round = state_dict.get('round', None)
+            self.reset(init=state_dict["init"], n=state_dict["n"])
+            self.round = state_dict.get("round", None)
 
     @property
     def avg(self):
@@ -186,16 +221,16 @@ class StopwatchMeter(Meter):
 
     def state_dict(self):
         return {
-            'sum': self.sum,
-            'n': self.n,
-            'round': self.round,
+            "sum": self.sum,
+            "n": self.n,
+            "round": self.round,
         }
 
     def load_state_dict(self, state_dict):
-        self.sum = state_dict['sum']
-        self.n = state_dict['n']
+        self.sum = state_dict["sum"]
+        self.n = state_dict["n"]
         self.start_time = None
-        self.round = state_dict.get('round', None)
+        self.round = state_dict.get("round", None)
 
     @property
     def avg(self):
@@ -204,7 +239,7 @@ class StopwatchMeter(Meter):
     @property
     def elapsed_time(self):
         if self.start_time is None:
-            return 0.
+            return 0.0
         return time.perf_counter() - self.start_time
 
     @property
@@ -263,11 +298,13 @@ class MetersDict(OrderedDict):
 
     def get_smoothed_values(self) -> Dict[str, float]:
         """Get all smoothed values."""
-        return OrderedDict([
-            (key, self.get_smoothed_value(key))
-            for key in self.keys()
-            if not key.startswith("_")
-        ])
+        return OrderedDict(
+            [
+                (key, self.get_smoothed_value(key))
+                for key in self.keys()
+                if not key.startswith("_")
+            ]
+        )
 
     def reset(self):
         """Reset Meter instances."""

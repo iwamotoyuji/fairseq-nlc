@@ -2,6 +2,7 @@
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
+"""isort:skip_file"""
 
 from .dictionary import Dictionary, TruncatedDictionary
 
@@ -11,7 +12,8 @@ from .base_wrapper_dataset import BaseWrapperDataset
 
 from .add_target_dataset import AddTargetDataset
 from .append_token_dataset import AppendTokenDataset
-from .audio.raw_audio_dataset import FileAudioDataset
+from .audio.raw_audio_dataset import BinarizedAudioDataset, FileAudioDataset
+from .audio.hubert_dataset import HubertDataset
 from .backtranslation_dataset import BacktranslationDataset
 from .bucket_pad_length_dataset import BucketPadLengthDataset
 from .colorize_dataset import ColorizeDataset
@@ -19,7 +21,12 @@ from .concat_dataset import ConcatDataset
 from .concat_sentences_dataset import ConcatSentencesDataset
 from .denoising_dataset import DenoisingDataset
 from .id_dataset import IdDataset
-from .indexed_dataset import IndexedCachedDataset, IndexedDataset, IndexedRawTextDataset, MMapIndexedDataset
+from .indexed_dataset import (
+    IndexedCachedDataset,
+    IndexedDataset,
+    IndexedRawTextDataset,
+    MMapIndexedDataset,
+)
 from .language_pair_dataset import LanguagePairDataset
 from .list_dataset import ListDataset
 from .lm_context_window_dataset import LMContextWindowDataset
@@ -59,60 +66,63 @@ from .iterators import (
 )
 
 __all__ = [
-    'AddTargetDataset',
-    'AppendTokenDataset',
-    'BacktranslationDataset',
-    'BaseWrapperDataset',
-    'BucketPadLengthDataset',
-    'ColorizeDataset',
-    'ConcatDataset',
-    'ConcatSentencesDataset',
-    'CountingIterator',
-    'DenoisingDataset',
-    'Dictionary',
-    'EncodedFastaDataset',
-    'EpochBatchIterator',
-    'FairseqDataset',
-    'FairseqIterableDataset',
-    'FastaDataset',
-    'GroupedIterator',
-    'IdDataset',
-    'IndexedCachedDataset',
-    'IndexedDataset',
-    'IndexedRawTextDataset',
-    'LanguagePairDataset',
-    'LeftPadDataset',
-    'ListDataset',
-    'LMContextWindowDataset',
-    'LRUCacheDataset',
-    'MaskTokensDataset',
-    'MMapIndexedDataset',
-    'MonolingualDataset',
-    'MultiCorpusSampledDataset',
-    'NestedDictionaryDataset',
-    'NoisingDataset',
-    'NumelDataset',
-    'NumSamplesDataset',
-    'OffsetTokensDataset',
-    'PadDataset',
-    'PrependDataset',
-    'PrependTokenDataset',
-    'ReplaceDataset',
-    'RollDataset',
-    'FileAudioDataset',
-    'RawLabelDataset',
-    'ResamplingDataset',
-    'RightPadDataset',
-    'RoundRobinZipDatasets',
-    'SampledMultiDataset',
-    'SampledMultiEpochDataset',
-    'ShardedIterator',
-    'SortDataset',
-    'StripTokenDataset',
-    'SubsampleDataset',
-    'TokenBlockDataset',
-    'TransformEosDataset',
-    'TransformEosLangPairDataset',
-    'TruncateDataset',
-    'TruncatedDictionary',
+    "AddTargetDataset",
+    "AppendTokenDataset",
+    "BacktranslationDataset",
+    "BaseWrapperDataset",
+    "BinarizedAudioDataset",
+    "BucketPadLengthDataset",
+    "ColorizeDataset",
+    "ConcatDataset",
+    "ConcatSentencesDataset",
+    "CountingIterator",
+    "DenoisingDataset",
+    "Dictionary",
+    "EncodedFastaDataset",
+    "EpochBatchIterator",
+    "FairseqDataset",
+    "FairseqIterableDataset",
+    "FastaDataset",
+    "FileAudioDataset",
+    "GroupedIterator",
+    "HubertDataset",
+    "IdDataset",
+    "IndexedCachedDataset",
+    "IndexedDataset",
+    "IndexedRawTextDataset",
+    "LanguagePairDataset",
+    "LeftPadDataset",
+    "ListDataset",
+    "LMContextWindowDataset",
+    "LRUCacheDataset",
+    "MaskTokensDataset",
+    "MMapIndexedDataset",
+    "MonolingualDataset",
+    "MultiCorpusSampledDataset",
+    "NestedDictionaryDataset",
+    "NoisingDataset",
+    "NumelDataset",
+    "NumSamplesDataset",
+    "OffsetTokensDataset",
+    "PadDataset",
+    "PrependDataset",
+    "PrependTokenDataset",
+    "RandomCropDataset",
+    "RawLabelDataset",
+    "ResamplingDataset",
+    "ReplaceDataset",
+    "RightPadDataset",
+    "RollDataset",
+    "RoundRobinZipDatasets",
+    "SampledMultiDataset",
+    "SampledMultiEpochDataset",
+    "ShardedIterator",
+    "SortDataset",
+    "StripTokenDataset",
+    "SubsampleDataset",
+    "TokenBlockDataset",
+    "TransformEosDataset",
+    "TransformEosLangPairDataset",
+    "TruncateDataset",
+    "TruncatedDictionary",
 ]

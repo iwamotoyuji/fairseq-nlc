@@ -16,7 +16,7 @@ We could have the constraints:
 
 There are two implementations:
 * OrderedConstraintState: Tracks progress through an ordered list of multitoken constraints.
-* UnorderedConstraintState: Tracks progress through an unordered list of multitoken constraints.
+* UnorderedConstraintState: Tracks progress through an unordered list of multitoken constraints. And this one is alse used for negative constraints
 
 The difference is that in the first, the constraints are assumed to be
 in order; the algorithm will permit zero or more tokens between them.
@@ -27,10 +27,11 @@ The same sequence can be present any number of times, and will appear
 that many times in the output.
 """
 
+from collections import Counter
+from typing import List, Optional, Set, Tuple
+
 import torch
 
-from collections import Counter
-from typing import Tuple, List, Optional, Set
 
 class ConstraintState:
     def __init__(self):
@@ -70,7 +71,11 @@ def pack_constraints(batch_constraints: List[List[torch.Tensor]]) -> torch.Tenso
     for sentence_constraints in batch_constraints:
         if len(sentence_constraints):
             # number of constraints, plus sum of constrain lens, plus a zero after each
-            constraints_len = 1 + sum([c.size(0) for c in sentence_constraints]) + len(sentence_constraints)
+            constraints_len = (
+                1
+                + sum([c.size(0) for c in sentence_constraints])
+                + len(sentence_constraints)
+            )
             max_constraints_len = max(max_constraints_len, constraints_len)
 
     batch_size = len(batch_constraints)
@@ -80,7 +85,7 @@ def pack_constraints(batch_constraints: List[List[torch.Tensor]]) -> torch.Tenso
         offset = 1
         for j, constraint in enumerate(sentence_constraints):
             this_len = constraint.size(0)
-            constraints_tensor[i, offset:offset+this_len] = constraint
+            constraints_tensor[i, offset : offset + this_len] = constraint
             offset += this_len + 1
 
     return constraints_tensor.long()
@@ -107,6 +112,7 @@ class ConstraintNode:
     """
     Represents a node in a trie managing unordered constraints.
     """
+
     def __init__(self, token: int = None, parent=None):
         # The token associate with this node (None for the root)
         self.token = int(token) if token is not None else None
@@ -172,6 +178,12 @@ class ConstraintNode:
         """Returns the set of tokens in constraints."""
         return set(self.token_counts().keys())
 
+    def negative_tokens(self) -> Set[int]:
+        """Returns the set of negative tokens in constraints.
+        for phrase the current word is the penultimate
+        """
+        return set([_token for _token, child in self.children.items() if child.terminal])
+
     def add_sequence(self, sequence: List[int]):
         """Adds a constraint, represented as a list of integers, to
         the trie."""
@@ -198,9 +210,8 @@ class UnorderedConstraintState(ConstraintState):
     Records progress through the set of constraints for each item in the beam
     using a trie.
     """
-    def __init__(self,
-                 node: ConstraintNode,
-                 copy_from: "ConstraintState" = None):
+
+    def __init__(self, node: ConstraintNode, copy_from: "ConstraintState" = None):
         self.node = node
 
         if copy_from is None:
@@ -289,6 +300,12 @@ class UnorderedConstraintState(ConstraintState):
             return self.root.next_tokens().union(self.node.next_tokens())
         else:
             return self.root.next_tokens()
+
+    def negative_tokens(self) -> Set[int]:
+        """Returns the negative tokens of root node and current node,
+        indicate token constraints and phrase constraints respectively.
+        """
+        return self.root.negative_tokens().union(self.node.negative_tokens())
 
     def advance(self, token: int):
         """Reads in a token and advances the state. Here's how it works.
@@ -383,9 +400,8 @@ class OrderedConstraintState(ConstraintState):
     """
     Records progress through the set of linear nonbranching constraints with gaps.
     """
-    def __init__(self,
-                 sequence: ConstraintSequence,
-                 state: int = -1):
+
+    def __init__(self, sequence: ConstraintSequence, state: int = -1):
         self.sequence = sequence
         self.state = state
 
@@ -407,7 +423,9 @@ class OrderedConstraintState(ConstraintState):
     def num_completed(self):
         if self.state == -1:
             return 0
-        count = len(list(filter(lambda x: x, self.sequence.endpoints[0:self.state+1])))
+        count = len(
+            list(filter(lambda x: x, self.sequence.endpoints[0 : self.state + 1]))
+        )
         return count
 
     @property
