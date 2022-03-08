@@ -158,8 +158,9 @@ class SequenceGenerator(nn.Module):
             sample (dict): batch
             prefix_tokens (torch.LongTensor, optional): force decoder to begin
                 with these tokens
-            constraints (torch.LongTensor, optional): force decoder to include
-                the list of constraints
+            constraints ({"positive": torch.LongTensor, "negative": torch.LongTensor}):
+                force decoder to include the list of positive constraints and exclude
+                the list of negative constraints.
             bos_token (int, optional): beginning of sentence token
                 (default: self.eos)
         """
@@ -169,7 +170,7 @@ class SequenceGenerator(nn.Module):
         self,
         sample: Dict[str, Dict[str, Tensor]],
         prefix_tokens: Optional[Tensor] = None,
-        constraints: Optional[Tensor] = None,
+        constraints: Optional[Dict[str, Tensor]] = None,
         bos_token: Optional[int] = None,
     ):
         incremental_states = torch.jit.annotate(
@@ -201,10 +202,7 @@ class SequenceGenerator(nn.Module):
         beam_size = self.beam_size
 
         if constraints is not None and not self.search.supports_constraints:
-            raise NotImplementedError("Target-side constraints were provided, but search method doesn't support them")
-
-        # Initialize constraints, when active
-        self.search.init_constraints(constraints, beam_size)
+            raise NotImplementedError("Target-side constraints or negative constraints were provided, but search method doesn't support them")
 
         max_len: int = -1
         if self.match_source_len:
@@ -263,12 +261,26 @@ class SequenceGenerator(nn.Module):
         # number of candidate hypos per step
         cand_size = 2 * beam_size  # 2 x beam size in case half are EOS
 
+        # Initialize constraints, when active
+        if constraints is not None and self.search.supports_constraints:            
+            assert (
+                constraints["positive"] is not None and constraints["negative"] is not None
+            ), "both 'positive' and 'negative' constraints should not be None under constraint supported condition"
+            self.search.init_constraints(constraints["positive"], constraints["negative"], beam_size, cand_size)
+
         # offset arrays for converting between different indexing schemes
         bbsz_offsets = (torch.arange(0, bsz) * beam_size).unsqueeze(1).type_as(tokens)
         cand_offsets = torch.arange(0, cand_size).type_as(tokens)
 
         reorder_state: Optional[Tensor] = None
         batch_idxs: Optional[Tensor] = None
+
+        original_batch_idxs: Optional[Tensor] = None
+        if "id" in sample and isinstance(sample["id"], Tensor):
+            original_batch_idxs = sample["id"]
+        else:
+            original_batch_idxs = torch.arange(0, bsz).type_as(tokens)
+        
         for step in range(max_len + 1):  # one extra step for EOS marker
             # reorder decoder internal states based on the prev choice of beams
             # print(f'step: {step}')
@@ -281,6 +293,7 @@ class SequenceGenerator(nn.Module):
                     reorder_state.view(-1, beam_size).add_(
                         corr.unsqueeze(-1) * beam_size
                     )
+                    original_batch_idxs = original_batch_idxs[batch_idxs]
                 self.model.reorder_incremental_state(incremental_states, reorder_state)
                 encoder_outs = self.model.reorder_encoder_out(
                     encoder_outs, reorder_state
@@ -342,6 +355,8 @@ class SequenceGenerator(nn.Module):
                 step,
                 lprobs.view(bsz, -1, self.vocab_size),
                 scores.view(bsz, beam_size, -1)[:, :, :step],
+                tokens[:, : step + 1],
+                original_batch_idxs,
             )
 
             # cand_bbsz_idx contains beam indices for the top candidate

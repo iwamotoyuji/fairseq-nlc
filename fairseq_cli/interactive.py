@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger('fairseq_cli.interactive')
 
 
-Batch = namedtuple('Batch', 'ids src_tokens src_lengths constraints')
+Batch = namedtuple("Batch", "ids src_tokens src_lengths constraints negative_constraints")
 Translation = namedtuple('Translation', 'src_str hypos pos_scores alignments')
 
 
@@ -55,20 +55,40 @@ def make_batches(lines, args, task, max_positions, encode_fn):
         return encode_fn(x)
 
     if args.constraints:
-        # Strip (tab-delimited) contraints, if present, from input lines,
-        # store them in batch_constraints
+        # Strip (tab-delimited) contraints and negative constraints, if present, from input lines,
+        # "##"-delimited two types of constraint,
+        # store them in batch_constraints and batch_negative_constraints
         batch_constraints = [list() for _ in lines]
+        batch_negative_constraints = [list() for _ in lines]
         for i, line in enumerate(lines):
             if "\t" in line:
-                lines[i], *batch_constraints[i] = line.split("\t")
+                if "##" in line:
+                    line_constraint, negative_constraint = line.split("##")
+                    lines[i], *batch_constraints[i] = line_constraint.split("\t")
+                    *batch_negative_constraints[i], = negative_constraint.split("\t")
+                else:
+                    # By default, only use positive constraints
+                    lines[i], *batch_constraints[i] = line.split("\t")
 
         # Convert each List[str] to List[Tensor]
         for i, constraint_list in enumerate(batch_constraints):
-            batch_constraints[i] = [task.target_dictionary.encode_line(
-                encode_fn_target(constraint),
-                append_eos=False,
-                add_if_not_exist=False,
-            ) for constraint in constraint_list]
+            batch_constraints[i] = [
+                task.target_dictionary.encode_line(
+                    encode_fn_target(constraint),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                for constraint in constraint_list if constraint
+            ]
+        for i, negative_constraint_list in enumerate(batch_negative_constraints):
+            batch_negative_constraints[i] = [
+                task.target_dictionary.encode_line(
+                    encode_fn_target(negative_constraint),
+                    append_eos=False,
+                    add_if_not_exist=False,
+                )
+                for negative_constraint in negative_constraint_list if negative_constraint
+            ]
 
     tokens = [
         task.source_dictionary.encode_line(
@@ -79,12 +99,14 @@ def make_batches(lines, args, task, max_positions, encode_fn):
 
     if args.constraints:
         constraints_tensor = pack_constraints(batch_constraints)
+        negative_constraints_tensor = pack_constraints(batch_negative_constraints)
+        constraints = {"positive": constraints_tensor, "negative": negative_constraints_tensor}
     else:
-        constraints_tensor = None
+        constraints = None
 
     lengths = [t.numel() for t in tokens]
     itr = task.get_batch_iterator(
-        dataset=task.build_dataset_for_inference(tokens, lengths, constraints=constraints_tensor),
+        dataset=task.build_dataset_for_inference(tokens, lengths, constraints=constraints),
         max_tokens=args.max_tokens,
         max_sentences=args.max_sentences,
         max_positions=max_positions,
@@ -95,12 +117,14 @@ def make_batches(lines, args, task, max_positions, encode_fn):
         src_tokens = batch['net_input']['src_tokens']
         src_lengths = batch['net_input']['src_lengths']
         constraints = batch.get("constraints", None)
+        negative_constraints = batch.get("negative_constraints", None)
 
         yield Batch(
             ids=ids,
             src_tokens=src_tokens,
             src_lengths=src_lengths,
             constraints=constraints,
+            negative_constraints=negative_constraints,
         )
 
 
@@ -198,11 +222,20 @@ def main(args):
             src_tokens = batch.src_tokens
             src_lengths = batch.src_lengths
             constraints = batch.constraints
+            negative_constraints = batch.negative_constraints
             if use_cuda:
                 src_tokens = src_tokens.cuda()
                 src_lengths = src_lengths.cuda()
                 if constraints is not None:
                     constraints = constraints.cuda()
+                if negative_constraints is not None:
+                    negative_constraints = negative_constraints.cuda()
+            if constraints is not None and negative_constraints is not None:
+                constraints_dict = dict()
+                constraints_dict["positive"] = constraints
+                constraints_dict["negative"] = negative_constraints
+            else:
+                constraints_dict = None
 
             sample = {
                 'net_input': {
@@ -211,19 +244,30 @@ def main(args):
                 },
             }
             translate_start_time = time.time()
-            translations = task.inference_step(generator, models, sample, constraints=constraints)
+            translations = task.inference_step(generator, models, sample, constraints=constraints_dict)
             translate_time = time.time() - translate_start_time
             total_translate_time += translate_time
             list_constraints = [[] for _ in range(bsz)]
+            list_negative_constraints = [[] for _ in range(bsz)]
             if args.constraints:
                 list_constraints = [unpack_constraints(c) for c in constraints]
+                list_negative_constraints = [unpack_constraints(c) for c in negative_constraints]
             for i, (id, hypos) in enumerate(zip(batch.ids.tolist(), translations)):
                 src_tokens_i = utils.strip_pad(src_tokens[i], tgt_dict.pad())
                 constraints = list_constraints[i]
-                results.append((start_id + id, src_tokens_i, hypos,
-                                { "constraints": constraints,
-                                  "time": translate_time / len(translations) }
-                            ))
+                negative_constraints = list_negative_constraints[i]
+                results.append(
+                    (
+                        start_id + id,
+                        src_tokens_i,
+                        hypos,
+                        {
+                            "constraints": constraints,
+                            "negative_constraints": negative_constraints,
+                            "time": translate_time / len(translations),
+                        },
+                    )
+                )
 
         # sort output to match input order
         for id_, src_tokens, hypos, info in sorted(results, key=lambda x: x[0]):
@@ -232,7 +276,16 @@ def main(args):
                 print('S-{}\t{}'.format(id_, src_str))
                 print("W-{}\t{:.3f}\tseconds".format(id_, info["time"]))
                 for constraint in info["constraints"]:
-                    print("C-{}\t{}".format(id_, tgt_dict.string(constraint, args.remove_bpe)))
+                    print(
+                        "C-{}\t{}".format(
+                            id_, tgt_dict.string(constraint, args.remove_bpe)
+                        )
+                    )
+                for negative_constraint in info["negative_constraints"]:
+                    print("N-{}\t{}".format(
+                            id_, tgt_dict.string(negative_constraint, args.remove_bpe)
+                        )
+                    )
 
             # Process top predictions
             for hypo in hypos[:min(len(hypos), args.nbest)]:

@@ -57,6 +57,17 @@ def collate(
         align_weights = align_tgt_c[align_tgt_i[np.arange(len(align_tgt))]]
         return 1. / align_weights.float()
 
+    def collate_constraints(samples, key, sort_order):
+        """
+        Collate the packed constraints( positive or negative according to key) across the samples,
+        padding to the length of the longest sample.
+        """
+        lens = [sample.get(key).size(0) for sample in samples]
+        _constraints = torch.zeros((len(samples), max(lens))).long()
+        for i, sample in enumerate(samples):
+            _constraints[i, 0:lens[i]] = sample.get(key)
+        return _constraints.index_select(0, sort_order)
+
     id = torch.LongTensor([s['id'] for s in samples])
     src_tokens = merge(
         'source', left_pad=left_pad_source,
@@ -136,14 +147,9 @@ def collate(
             batch['align_weights'] = align_weights
 
     if samples[0].get("constraints", None) is not None:
-        # Collate the packed constraints across the samples, padding to
-        # the length of the longest sample.
-        lens = [sample.get("constraints").size(0) for sample in samples]
-        max_len = max(lens)
-        constraints = torch.zeros((len(samples), max(lens))).long()
-        for i, sample in enumerate(samples):
-            constraints[i, 0:lens[i]] = samples[i].get("constraints")
-        batch["constraints"] = constraints
+        batch["constraints"] = collate_constraints(samples, "constraints", sort_order)
+    if samples[0].get("negative_constraints", None) is not None:
+        batch["negative_constraints"] = collate_constraints(samples, "negative_constraints", sort_order)
 
     return batch
 
@@ -173,8 +179,10 @@ class LanguagePairDataset(FairseqDataset):
             target if it's absent (default: False).
         align_dataset (torch.utils.data.Dataset, optional): dataset
             containing alignments.
-        constraints (Tensor, optional): 2d tensor with a concatenated, zero-
-            delimited list of constraints for each sentence.
+        constraints (Dict, optional):if not None, it will be {"positive": torch.LongTensor,
+            "negative": torch.LongTensor}, forcing decoder to include the list of positive 
+            constraints and exclude the list of negative constraints. Each type of constraints
+            is a 2d tensor with a concatenated, zero-delimited list of constraints for each sentence.
         append_bos (bool, optional): if set, appends bos to the beginning of
             source/target sentence.
         num_buckets (int, optional): if set to a value greater than 0, then
@@ -299,7 +307,8 @@ class LanguagePairDataset(FairseqDataset):
         if self.align_dataset is not None:
             example['alignment'] = self.align_dataset[index]
         if self.constraints is not None:
-            example["constraints"] = self.constraints[index]
+            example["constraints"] = self.constraints["positive"][index]
+            example["negative_constraints"] = self.constraints["negative"][index]
         return example
 
     def __len__(self):

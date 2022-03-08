@@ -152,11 +152,20 @@ def _main(args, output_file):
             prefix_tokens = sample['target'][:, :args.prefix_size]
 
         constraints = None
+        negative_constraints = None
         if "constraints" in sample:
             constraints = sample["constraints"]
+        if "negative_constraints" in sample:
+            negative_constraints = sample["negative_constraints"]
+        if constraints is not None and negative_constraints is not None:
+            constraints_dict = dict()
+            constraints_dict["positive"] = constraints
+            constraints_dict["negative"] = negative_constraints
+        else:
+            constraints_dict = None
 
         gen_timer.start()
-        hypos = task.inference_step(generator, models, sample, prefix_tokens=prefix_tokens, constraints=constraints)
+        hypos = task.inference_step(generator, models, sample, prefix_tokens=prefix_tokens, constraints=constraints_dict)
         num_generated_tokens = sum(len(h[0]['tokens']) for h in hypos)
         gen_timer.stop(num_generated_tokens)
 
